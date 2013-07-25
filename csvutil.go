@@ -32,6 +32,7 @@ type Reader struct {
 	customHeader bool                // True if custom CSV header was set
 	customTBool  map[string]struct{} // Custom true values
 	customFBool  map[string]struct{} // Custom false values
+	trim         string              // Characters to trim
 }
 
 // NewCsvParser returns new Reader
@@ -75,6 +76,12 @@ func (r *Reader) CustomBool(t []string, f []string) *Reader {
 	for _, fv := range f {
 		r.customFBool[fv] = struct{}{}
 	}
+	return r
+}
+
+// Trim list of characters to trim before returning CSV column value.
+func (r *Reader) Trim(t string) *Reader {
+	r.trim = t
 	return r
 }
 
@@ -142,7 +149,11 @@ func (r *Reader) SetData(v interface{}) ([]string, error) {
 
 // colByName returns CSV column value by name.
 func (r *Reader) colByName(colName string) string {
-	return r.csvLine[r.header[colName]]
+	value := r.csvLine[r.header[colName]]
+	if r.trim != "" {
+		value = strings.Trim(value, r.trim)
+	}
+	return value
 }
 
 // ToCsv takes a struct and returns CSV line.

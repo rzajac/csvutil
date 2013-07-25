@@ -221,3 +221,18 @@ func Test_customTrueFalse(t *testing.T) {
 	assert.Equal(t, true, p.Yes)
 	assert.Equal(t, false, p.No)
 }
+
+func Test_trim(t *testing.T) {
+	// Prepare test
+	sr := StringReader("   Tom |12|123")
+	c := NewCsvUtil(sr).Comma('|').Trim(" ")
+
+	// Start test
+	p := &person{}
+	_, err := c.SetData(p)
+	assert.NotError(t, err)
+
+	assert.Equal(t, "Tom", p.Name)
+	assert.Equal(t, 12, p.Age)
+	assert.Equal(t, float32(123), p.Balance)
+}

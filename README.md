@@ -87,6 +87,14 @@ main () {
 main () {
 	sr := StringReader("Y|N")
 	c := NewCsvUtil(sr).CustomBool([]string{"Y"}, []string{"N"})
+}
+```
+
+### Trim CSV column values before assigning to structure field
+
+```go
+c := NewCsvUtil(sr).Trim(" ") // Trim spaces from beginning and the end of volumn value
+c := NewCsvUtil(sr).Trim(" *") // Trim spaces and asterisks from beginning and the end of volumn value
 ```
 
 ### Create CSV line from struct
