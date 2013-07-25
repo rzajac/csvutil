@@ -10,7 +10,7 @@ To install assertions run:
 
 ## Documentation
 
-* http://godoc.org/github.com/rzajac/assert/csvutil
+* http://godoc.org/github.com/rzajac/csvutil
 
 ### Set fields from CSV
 
