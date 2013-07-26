@@ -182,8 +182,7 @@ func Test_ToCsv(t *testing.T) {
 	p := &person{"Tom", 45, 111.22, "aaa"}
 
 	// Start test
-	gotCsv, err := ToCsv(p, "|")
-	assert.NotError(t, err)
+	gotCsv := ToCsv(p, "|")
 	assert.Equal(t, "Tom|45|111.22", gotCsv)
 }
 

@@ -157,7 +157,7 @@ func (r *Reader) colByName(colName string) string {
 }
 
 // ToCsv takes a struct and returns CSV line.
-func ToCsv(v interface{}, delim string) (string, error) {
+func ToCsv(v interface{}, delim string) string {
 	var csvLine []string
 	t := reflect.ValueOf(v)
 
@@ -173,15 +173,12 @@ func ToCsv(v interface{}, delim string) (string, error) {
 		structField := t.Type().Field(i)
 		field := t.Field(i)
 		if !structField.Anonymous && !skip(structField.Tag) && field.CanSet() {
-			strValue, err := getValue(field)
-			if err != nil {
-				return "", err
-			}
+			strValue := getValue(field)
 			csvLine = append(csvLine, strValue)
 		}
 	}
 
-	return strings.Join(csvLine, delim), nil
+	return strings.Join(csvLine, delim)
 }
 
 // sField described structure field.
@@ -301,37 +298,37 @@ func (r *Reader) setValue(v reflect.Value, f *sField, value string) (err error) 
 }
 
 // getValue gets string representation of the struct field.
-func getValue(field reflect.Value) (string, error) {
+func getValue(field reflect.Value) string {
 	switch field.Kind() {
 	case reflect.Int:
-		return strconv.Itoa(field.Interface().(int)), nil
+		return strconv.Itoa(field.Interface().(int))
 	case reflect.Int8:
-		return strconv.FormatInt(int64(field.Interface().(int8)), 10), nil
+		return strconv.FormatInt(int64(field.Interface().(int8)), 10)
 	case reflect.Int16:
-		return strconv.FormatInt(int64(field.Interface().(int16)), 10), nil
+		return strconv.FormatInt(int64(field.Interface().(int16)), 10)
 	case reflect.Int32:
-		return strconv.FormatInt(int64(field.Interface().(int32)), 10), nil
+		return strconv.FormatInt(int64(field.Interface().(int32)), 10)
 	case reflect.Int64:
-		return strconv.FormatInt(field.Interface().(int64), 10), nil
+		return strconv.FormatInt(field.Interface().(int64), 10)
 	case reflect.Uint:
-		return strconv.FormatUint(uint64(field.Interface().(uint)), 10), nil
+		return strconv.FormatUint(uint64(field.Interface().(uint)), 10)
 	case reflect.Uint8:
-		return strconv.FormatUint(uint64(field.Interface().(uint8)), 10), nil
+		return strconv.FormatUint(uint64(field.Interface().(uint8)), 10)
 	case reflect.Uint16:
-		return strconv.FormatUint(uint64(field.Interface().(uint16)), 10), nil
+		return strconv.FormatUint(uint64(field.Interface().(uint16)), 10)
 	case reflect.Uint32:
-		return strconv.FormatUint(uint64(field.Interface().(uint32)), 10), nil
+		return strconv.FormatUint(uint64(field.Interface().(uint32)), 10)
 	case reflect.Uint64:
-		return strconv.FormatUint(field.Interface().(uint64), 10), nil
+		return strconv.FormatUint(field.Interface().(uint64), 10)
 	case reflect.Float32:
-		return strconv.FormatFloat(float64(field.Interface().(float32)), 'g', -1, 32), nil
+		return strconv.FormatFloat(float64(field.Interface().(float32)), 'g', -1, 32)
 	case reflect.Float64:
-		return strconv.FormatFloat(field.Interface().(float64), 'g', -1, 32), nil
+		return strconv.FormatFloat(field.Interface().(float64), 'g', -1, 32)
 	case reflect.String:
-		return field.Interface().(string), nil
+		return field.Interface().(string)
 	case reflect.Bool:
-		return strconv.FormatBool(field.Interface().(bool)), nil
+		return strconv.FormatBool(field.Interface().(bool))
 	default:
-		return "", errors.New("Wasn't able to get value from filed: " + field.Type().Name())
+		panic("Wasn't able to get value for filed: " + field.Type().Name() + " field type:" + field.Type().String())
 	}
 }
