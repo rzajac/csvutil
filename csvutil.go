@@ -68,6 +68,12 @@ func (r *Reader) FieldsPerRecord(i int) *Reader {
 	return r
 }
 
+// LazyQuotes allow lazy quotes.
+func (r *Reader) LazyQuotes(b bool) *Reader {
+	r.csvr.LazyQuotes = b
+	return r
+}
+
 // CustomBool set custom boolean values
 func (r *Reader) CustomBool(t []string, f []string) *Reader {
 	for _, tv := range t {
@@ -104,9 +110,10 @@ func (r *Reader) read() ([]string, error) {
 }
 
 // Header sets header for CSV file.
-func (r *Reader) Header(h map[string]int) {
+func (r *Reader) Header(h map[string]int) *Reader {
 	r.header = h
 	r.customHeader = true
+	return r
 }
 
 // SetData sets values from CSV record on passed struct.
@@ -263,8 +270,12 @@ func (r *Reader) setValue(v reflect.Value, f *sField, value string) (err error) 
 			fallthrough
 		case reflect.Int64:
 			var i64 int64
-			i64, err = strconv.ParseInt(value, 10, 64)
-			elem.SetInt(i64)
+			if value == "" {
+				elem.SetInt(0)
+			} else {
+				i64, err = strconv.ParseInt(value, 10, 64)
+				elem.SetInt(i64)
+			}
 			return
 		case reflect.Uint:
 			fallthrough
@@ -276,15 +287,23 @@ func (r *Reader) setValue(v reflect.Value, f *sField, value string) (err error) 
 			fallthrough
 		case reflect.Uint64:
 			var u64 uint64
-			u64, err = strconv.ParseUint(value, 10, 64)
-			elem.SetUint(u64)
+			if value == "" {
+				elem.SetUint(0)
+			} else {
+				u64, err = strconv.ParseUint(value, 10, 64)
+				elem.SetUint(u64)
+			}
 			return
 		case reflect.Float32:
 			fallthrough
 		case reflect.Float64:
 			var f64 float64
-			f64, err = strconv.ParseFloat(value, 64)
-			elem.SetFloat(f64)
+			if value == "" {
+				elem.SetFloat(f64)
+			} else {
+				f64, err = strconv.ParseFloat(value, 64)
+				elem.SetFloat(f64)
+			}
 			return
 		case reflect.Bool:
 			var b bool
