@@ -37,12 +37,12 @@ main () {
 	p := &person{Skipped: "aaa"}
 
 	// Set values from CSV line to person structure
-	_, err := c.SetData(p)
+	err := c.SetData(p)
 
 	// Do work with p
 
 	// Set values from the second CSV line
-	_, err := c.SetData(p)
+	err := c.SetData(p)
 
 }
 ```
@@ -69,12 +69,12 @@ main () {
 	p := &person2{}
 
 	// Set values from CSV line to person2 structure
-	_, err := c.SetData(p)
+	err := c.SetData(p)
 
 	// Do work with p
 
 	// Set values from the second CSV line
-	_, err := c.SetData(p)
+	err := c.SetData(p)
 }
 
 ```
@@ -104,6 +104,15 @@ p := &person{"Tom", 45, "aaa", 111.22}
 
 csvLine, err := ToCsv(p, "|")
 fmt.Println(csvLine) // Prints: Tom|45|111.22
+```
+
+### Getting last CSV line read form the file
+
+```go
+...
+p := &person2{}
+err := c.SetData(p)
+csvLine := c.LastCsvLine()
 ```
 
 ## TODO

@@ -36,10 +36,12 @@ func Test_NewReader(t *testing.T) {
 	l, err := c.read()
 	assert.NotError(t, err)
 	assert.Equal(t, []string{"Tony", "23", "123.456"}, l)
+	assert.Equal(t, "Tony|23|123.456", c.LastCsvLine())
 
 	l, err = c.read()
 	assert.NotError(t, err)
 	assert.Equal(t, []string{"John", "34", "234.567", ""}, l)
+	assert.Equal(t, "John|34|234.567|", c.LastCsvLine())
 }
 
 func Test_Header(t *testing.T) {
@@ -126,21 +128,21 @@ func Test_SetData(t *testing.T) {
 
 	// Start test
 	p := &person{Skipped: "aaa"}
-	_, err := c.SetData(p)
+	err := c.SetData(p)
 	assert.NotError(t, err)
 	assert.Equal(t, "Tony", p.Name)
 	assert.Equal(t, 23, p.Age)
 	assert.Equal(t, float32(123.456), p.Balance)
 	assert.Equal(t, "aaa", p.Skipped)
 
-	_, err = c.SetData(p)
+	err = c.SetData(p)
 	assert.NotError(t, err)
 	assert.Equal(t, "John", p.Name)
 	assert.Equal(t, 34, p.Age)
 	assert.Equal(t, float32(234.567), p.Balance)
 	assert.Equal(t, "aaa", p.Skipped)
 
-	_, err = c.SetData(p)
+	err = c.SetData(p)
 	assert.Equal(t, io.EOF, err)
 	// The previous data stays intact
 	assert.Equal(t, "John", p.Name)
@@ -195,7 +197,7 @@ func Test_pickingColumns(t *testing.T) {
 
 	// Start test
 	p := &person2{}
-	_, err := c.SetData(p)
+	err := c.SetData(p)
 	assert.NotError(t, err)
 
 	assert.Equal(t, "Tony", p.Name)
@@ -214,7 +216,7 @@ func Test_customTrueFalse(t *testing.T) {
 
 	// Start test
 	p := &YN{}
-	_, err := c.SetData(p)
+	err := c.SetData(p)
 	assert.NotError(t, err)
 
 	assert.Equal(t, true, p.Yes)
@@ -228,7 +230,7 @@ func Test_trim(t *testing.T) {
 
 	// Start test
 	p := &person{}
-	_, err := c.SetData(p)
+	err := c.SetData(p)
 	assert.NotError(t, err)
 
 	assert.Equal(t, "Tom", p.Name)

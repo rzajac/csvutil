@@ -111,14 +111,13 @@ func (r *Reader) Header(h map[string]int) {
 
 // SetData sets values from CSV record on passed struct.
 // Returns error or io.EOF when no more records exist.
-func (r *Reader) SetData(v interface{}) ([]string, error) {
+func (r *Reader) SetData(v interface{}) error {
 	var err error
 	var ok bool
-	var stringValues []string
 
 	_, err = r.read()
 	if err != nil {
-		return stringValues, err
+		return err
 	}
 
 	// Initialize cache if its not there yet
@@ -139,12 +138,16 @@ func (r *Reader) SetData(v interface{}) ([]string, error) {
 		strValue := r.colByName(sf.name)
 		err = r.setValue(value, sf, strValue)
 		if err != nil {
-			return stringValues, err
+			return err
 		}
-		stringValues = append(stringValues, strValue)
 	}
 
-	return stringValues, err
+	return err
+}
+
+// LastCsvLine returns most recent CSV line that has been read from the file.
+func (r *Reader) LastCsvLine() string {
+	return strings.Join(r.csvLine, string(r.csvr.Comma))
 }
 
 // colByName returns CSV column value by name.
