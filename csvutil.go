@@ -133,7 +133,7 @@ func (r *Reader) SetData(v interface{}) error {
 	}
 
 	structFields, structName := getFields(v)
-	fmt.Println(structFields)
+
 	if !r.customHeader {
 		if r.header, ok = hCache[structName]; !ok {
 			r.header = getHeaders(structFields)
