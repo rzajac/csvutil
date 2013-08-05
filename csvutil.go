@@ -133,6 +133,7 @@ func (r *Reader) SetData(v interface{}) error {
 	}
 
 	structFields, structName := getFields(v)
+	fmt.Println(structFields)
 	if !r.customHeader {
 		if r.header, ok = hCache[structName]; !ok {
 			r.header = getHeaders(structFields)
@@ -169,12 +170,13 @@ func (r *Reader) colByName(colName string) string {
 // ToCsv takes a struct and returns CSV line.
 func ToCsv(v interface{}, delim string) string {
 	var csvLine []string
+	var strValue string
 	t := reflect.ValueOf(v)
 
-	if t.Kind() != reflect.Ptr {
-		panic("Expected pointer")
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
 	}
-	t = t.Elem()
+
 	if t.Kind() != reflect.Struct {
 		panic("Expected pointer to a struct")
 	}
@@ -182,8 +184,15 @@ func ToCsv(v interface{}, delim string) string {
 	for i := 0; i < t.NumField(); i++ {
 		structField := t.Type().Field(i)
 		field := t.Field(i)
-		if !structField.Anonymous && !skip(structField.Tag) && field.CanSet() {
-			strValue := getValue(field)
+
+		if structField.Anonymous {
+			strValue = ToCsv(field.Interface(), delim)
+			csvLine = append(csvLine, strValue)
+			continue
+		}
+
+		if !skip(structField.Tag) && field.CanInterface() {
+			strValue = getValue(field)
 			csvLine = append(csvLine, strValue)
 		}
 	}
@@ -225,7 +234,7 @@ func getFields(v interface{}) ([]*sField, string) {
 
 	for i := 0; i < t.NumField(); i++ {
 		structField := t.Field(i)
-		if !structField.Anonymous && !skip(structField.Tag) && reflect.ValueOf(v).Elem().Field(i).CanSet() {
+		if !skip(structField.Tag) && reflect.ValueOf(v).Elem().Field(i).CanSet() {
 			f := &sField{}
 			f.name = structField.Name
 			f.typ = structField.Type

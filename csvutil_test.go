@@ -8,6 +8,8 @@ import (
 	"testing"
 )
 
+// Stuff to help testing
+
 var testCsvLines = []string{"Tony|23|123.456", "John|34|234.567|"}
 
 type person struct {
@@ -22,9 +24,19 @@ type person2 struct {
 	Balance float32
 }
 
+type A struct {
+	Field1, Field2 string
+}
+type B struct {
+	A
+	Field3 string
+}
+
 func StringReader(s string) *strings.Reader {
 	return strings.NewReader(s)
 }
+
+// Actual tests
 
 func Test_NewReader(t *testing.T) {
 	// Prepare test
@@ -237,3 +249,35 @@ func Test_trim(t *testing.T) {
 	assert.Equal(t, 12, p.Age)
 	assert.Equal(t, float32(123), p.Balance)
 }
+
+func Test_embededToCsv(t *testing.T) {
+	// Prepare test
+	b := new(B)
+	b.Field1 = "F1"
+	b.Field2 = "F2"
+	b.Field3 = "F3"
+
+	// Start test
+	assert.Equal(t, "F1,F2,F3", ToCsv(b, ","))
+}
+
+// func Test_setEmbeded(t *testing.T) {
+// 	// Prepare test
+// 	type A struct {
+// 		Field1, Field2 string
+// 	}
+// 	type B struct {
+// 		A
+// 		Field3 string
+// 	}
+// 	b := new(B)
+
+// 	sr := StringReader("F1,F2,F3")
+// 	c := NewCsvUtil(sr)
+
+// 	// Start test
+// 	c.SetData(b)
+
+// 	fmt.Println(b)
+// 	t.Fail()
+// }
