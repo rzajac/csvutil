@@ -17,6 +17,11 @@ To install assertions run:
 Here we are setting _person_ fields from CSV. The columns in CSV line must be in the same order as fields in the structure (from top to bottom). You may skip fields by tagging them with `csv:"-"`.
 
 ```go
+
+import (
+	"github.com/rzajac/csvutil"
+)
+
 var testCsvLines = []string{"Tony|23|123.456", "John|34|234.567|"}
 
 type person struct {
@@ -31,7 +36,7 @@ main () {
 	sr := StringReader(strings.Join(testCsvLines, "\n"))
 
 	// Set delimiter to '|', allow for trailing comma and do not check fields per CSV record
-	c := NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1)
+	c := csvutil.NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1)
 
 	// Struct we wil lpopulate with data
 	p := &person{Skipped: "aaa"}
@@ -59,7 +64,7 @@ main () {
 	sr := StringReader(strings.Join(testCsvLines, "\n"))
 
 	// Set delimiter to '|', allow for trailing comma and do not check fields per CSV record
-	c := NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1)
+	c := csvutil.NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1)
 
 	// Set header with column names matching structure fields and column indexes on the CSV line.
 	// The indexes in the CSV line start with 0.
@@ -86,15 +91,15 @@ main () {
 ```go
 main () {
 	sr := StringReader("Y|N")
-	c := NewCsvUtil(sr).CustomBool([]string{"Y"}, []string{"N"})
+	c := csvutil.NewCsvUtil(sr).CustomBool([]string{"Y"}, []string{"N"})
 }
 ```
 
 ### Trim CSV column values before assigning to structure field
 
 ```go
-c := NewCsvUtil(sr).Trim(" ") // Trim spaces from beginning and the end of volumn value
-c := NewCsvUtil(sr).Trim(" *") // Trim spaces and asterisks from beginning and the end of volumn value
+c := csvutil.NewCsvUtil(sr).Trim(" ") // Trim spaces from beginning and the end of volumn value
+c := csvutil.NewCsvUtil(sr).Trim(" *") // Trim spaces and asterisks from beginning and the end of volumn value
 ```
 
 ### Create CSV line from struct
@@ -102,7 +107,7 @@ c := NewCsvUtil(sr).Trim(" *") // Trim spaces and asterisks from beginning and t
 ```go
 p := &person{"Tom", 45, "aaa", 111.22}
 
-csvLine, err := ToCsv(p, "|")
+csvLine, err := csvutil.ToCsv(p, "|")
 fmt.Println(csvLine) // Prints: Tom|45|111.22
 ```
 
