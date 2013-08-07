@@ -354,7 +354,7 @@ func getValue(field reflect.Value) string {
 	case reflect.Float32:
 		return strconv.FormatFloat(float64(field.Interface().(float32)), 'f', -1, 32)
 	case reflect.Float64:
-		return strconv.FormatFloat(field.Interface().(float64), 'f', -1, 32)
+		return strconv.FormatFloat(field.Interface().(float64), 'f', -1, 64)
 	case reflect.String:
 		return field.Interface().(string)
 	case reflect.Bool:
