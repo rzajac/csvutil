@@ -168,7 +168,7 @@ func (r *Reader) colByName(colName string) string {
 }
 
 // ToCsv takes a struct and returns CSV line.
-func ToCsv(v interface{}, delim string) string {
+func ToCsv(v interface{}, delim, boolTrue, boolFalse string) string {
 	var csvLine []string
 	var strValue string
 	t := reflect.ValueOf(v)
@@ -186,13 +186,13 @@ func ToCsv(v interface{}, delim string) string {
 		field := t.Field(i)
 
 		if structField.Anonymous {
-			strValue = ToCsv(field.Interface(), delim)
+			strValue = ToCsv(field.Interface(), delim, boolTrue, boolFalse)
 			csvLine = append(csvLine, strValue)
 			continue
 		}
 
 		if !skip(structField.Tag) && field.CanInterface() {
-			strValue = getValue(field)
+			strValue = getValue(field, boolTrue, boolFalse)
 			csvLine = append(csvLine, strValue)
 		}
 	}
@@ -329,7 +329,7 @@ func (r *Reader) setValue(v reflect.Value, f *sField, value string) (err error) 
 }
 
 // getValue gets string representation of the struct field.
-func getValue(field reflect.Value) string {
+func getValue(field reflect.Value, boolTrue, boolFalse string) string {
 	switch field.Kind() {
 	case reflect.Int:
 		return strconv.Itoa(field.Interface().(int))
@@ -358,7 +358,11 @@ func getValue(field reflect.Value) string {
 	case reflect.String:
 		return field.Interface().(string)
 	case reflect.Bool:
-		return strconv.FormatBool(field.Interface().(bool))
+		if field.Interface().(bool) {
+			return boolTrue
+		} else {
+			return boolFalse
+		}
 	default:
 		panic("Wasn't able to get value for filed: " + field.Type().Name() + " field type:" + field.Type().String())
 	}

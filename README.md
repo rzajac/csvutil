@@ -22,13 +22,14 @@ import (
 	"github.com/rzajac/csvutil"
 )
 
-var testCsvLines = []string{"Tony|23|123.456", "John|34|234.567|"}
+var testCsvLines = []string{"Tony|23|123.456|Y", "John|34|234.567|N|"}
 
 type person struct {
 	Name    string
 	Age     int
 	Skipped string `csv:"-"` // Skip this field when setting the structure
 	Balance float32
+	LowBalance bool
 }
 
 main () {
@@ -36,9 +37,9 @@ main () {
 	sr := StringReader(strings.Join(testCsvLines, "\n"))
 
 	// Set delimiter to '|', allow for trailing comma and do not check fields per CSV record
-	c := csvutil.NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1)
+	c := csvutil.NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1).CustomBool([]string{"Y"}, []string{"N"})
 
-	// Struct we wil lpopulate with data
+	// Struct we will populate with CSV data
 	p := &person{Skipped: "aaa"}
 
 	// Set values from CSV line to person structure
@@ -86,7 +87,7 @@ main () {
 
 ### Custom true / false values
 
-**CustomBool()** method allows you to set custom true / false values in CSV column.
+**CustomBool()** method allows you to set custom true / false values in CSV columns.
 
 ```go
 main () {
@@ -105,13 +106,13 @@ c := csvutil.NewCsvUtil(sr).Trim(" *") // Trim spaces and asterisks from beginni
 ### Create CSV line from struct
 
 ```go
-p := &person{"Tom", 45, "aaa", 111.22}
+p := &person{"Tom", 45, "aaa", 111.22, true}
 
-csvLine, err := csvutil.ToCsv(p, "|")
-fmt.Println(csvLine) // Prints: Tom|45|111.22
+csvLine, err := csvutil.ToCsv(p, "|", "YY", "NN")
+fmt.Println(csvLine) // Prints: Tom|45|111.22|YY
 ```
 
-### Getting last CSV line read form the file
+### Getting last CSV line that have been read form the file
 
 ```go
 ...

@@ -10,13 +10,14 @@ import (
 
 // Stuff to help testing
 
-var testCsvLines = []string{"Tony|23|123.456", "John|34|234.567|"}
+var testCsvLines = []string{"Tony|23|123.456|Y", "John|34|234.567|N|"}
 
 type person struct {
-	Name    string
-	Age     int
-	Balance float32
-	Skipped string `csv:"-"`
+	Name       string
+	Age        int
+	Balance    float32
+	Skipped    string `csv:"-"`
+	LowBalance bool
 }
 
 type person2 struct {
@@ -47,13 +48,13 @@ func Test_NewReader(t *testing.T) {
 	assert.NotNil(t, c.csvr)
 	l, err := c.read()
 	assert.NotError(t, err)
-	assert.Equal(t, []string{"Tony", "23", "123.456"}, l)
-	assert.Equal(t, "Tony|23|123.456", c.LastCsvLine())
+	assert.Equal(t, []string{"Tony", "23", "123.456", "Y"}, l)
+	assert.Equal(t, "Tony|23|123.456|Y", c.LastCsvLine())
 
 	l, err = c.read()
 	assert.NotError(t, err)
-	assert.Equal(t, []string{"John", "34", "234.567", ""}, l)
-	assert.Equal(t, "John|34|234.567|", c.LastCsvLine())
+	assert.Equal(t, []string{"John", "34", "234.567", "N", ""}, l)
+	assert.Equal(t, "John|34|234.567|N|", c.LastCsvLine())
 }
 
 func Test_Header(t *testing.T) {
@@ -61,7 +62,7 @@ func Test_Header(t *testing.T) {
 	c := NewCsvUtil(nil)
 
 	// Start test
-	exp := map[string]int{"Name": 0, "Age": 1, "Balance": 2}
+	exp := map[string]int{"Name": 0, "Age": 1, "Balance": 2, "LowBalance": 3}
 	c.Header(exp)
 	assert.Equal(t, exp, c.header)
 }
@@ -72,7 +73,7 @@ func Test_getFields(t *testing.T) {
 
 	// Start test
 	fields, structName := getFields(p)
-	assert.Equal(t, 3, len(fields))
+	assert.Equal(t, 4, len(fields))
 	assert.Equal(t, "csvutil.person", structName)
 
 	assert.Equal(t, "Name", fields[0].name)
@@ -83,6 +84,9 @@ func Test_getFields(t *testing.T) {
 
 	assert.Equal(t, "Balance", fields[2].name)
 	assert.Equal(t, reflect.Float32, fields[2].typ.Kind())
+
+	assert.Equal(t, "LowBalance", fields[3].name)
+	assert.Equal(t, reflect.Bool, fields[3].typ.Kind())
 }
 
 func Test_getFields_panic(t *testing.T) {
@@ -130,13 +134,16 @@ func Test_getHeaders(t *testing.T) {
 
 	// Start test
 	headers := getHeaders(fields)
-	assert.Equal(t, map[string]int{"Name": 0, "Age": 1, "Balance": 2}, headers)
+	assert.Equal(t, map[string]int{"Name": 0, "Age": 1, "Balance": 2, "LowBalance": 3}, headers)
 }
 
 func Test_SetData(t *testing.T) {
 	// Prepare test
 	sr := StringReader(strings.Join(testCsvLines, "\n"))
-	c := NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1)
+	c := NewCsvUtil(sr).Comma('|').
+		TrailingComma(true).
+		FieldsPerRecord(-1).
+		CustomBool([]string{"Y"}, []string{"N"})
 
 	// Start test
 	p := &person{Skipped: "aaa"}
@@ -146,6 +153,7 @@ func Test_SetData(t *testing.T) {
 	assert.Equal(t, 23, p.Age)
 	assert.Equal(t, float32(123.456), p.Balance)
 	assert.Equal(t, "aaa", p.Skipped)
+	assert.Equal(t, true, p.LowBalance)
 
 	err = c.SetData(p)
 	assert.NotError(t, err)
@@ -153,6 +161,7 @@ func Test_SetData(t *testing.T) {
 	assert.Equal(t, 34, p.Age)
 	assert.Equal(t, float32(234.567), p.Balance)
 	assert.Equal(t, "aaa", p.Skipped)
+	assert.Equal(t, false, p.LowBalance)
 
 	err = c.SetData(p)
 	assert.Equal(t, io.EOF, err)
@@ -161,6 +170,7 @@ func Test_SetData(t *testing.T) {
 	assert.Equal(t, 34, p.Age)
 	assert.Equal(t, float32(234.567), p.Balance)
 	assert.Equal(t, "aaa", p.Skipped)
+	assert.Equal(t, false, p.LowBalance)
 }
 
 func Test_Comma(t *testing.T) {
@@ -193,11 +203,11 @@ func Test_FieldsPerRecord(t *testing.T) {
 
 func Test_ToCsv(t *testing.T) {
 	// Prepare test
-	p := &person{"Tom", 45, 111.22, "aaa"}
+	p := &person{"Tom", 45, 111.22, "aaa", true}
 
 	// Start test
-	gotCsv := ToCsv(p, "|")
-	assert.Equal(t, "Tom|45|111.22", gotCsv)
+	gotCsv := ToCsv(p, "|", "YY", "NN")
+	assert.Equal(t, "Tom|45|111.22|YY", gotCsv)
 }
 
 func Test_pickingColumns(t *testing.T) {
@@ -218,8 +228,8 @@ func Test_pickingColumns(t *testing.T) {
 
 func Test_customTrueFalse(t *testing.T) {
 	// Prepare test
-	sr := StringReader("Y|N")
-	c := NewCsvUtil(sr).Comma('|').CustomBool([]string{"Y"}, []string{"N"})
+	sr := StringReader("YY|NN")
+	c := NewCsvUtil(sr).Comma('|').CustomBool([]string{"YY"}, []string{"NN"})
 
 	type YN struct {
 		Yes bool
@@ -237,7 +247,7 @@ func Test_customTrueFalse(t *testing.T) {
 
 func Test_trim(t *testing.T) {
 	// Prepare test
-	sr := StringReader("   Tom |12|123")
+	sr := StringReader("   Tom |12|123|T")
 	c := NewCsvUtil(sr).Comma('|').Trim(" ")
 
 	// Start test
@@ -248,6 +258,7 @@ func Test_trim(t *testing.T) {
 	assert.Equal(t, "Tom", p.Name)
 	assert.Equal(t, 12, p.Age)
 	assert.Equal(t, float32(123), p.Balance)
+	assert.Equal(t, true, p.LowBalance)
 }
 
 func Test_embededToCsv(t *testing.T) {
@@ -258,7 +269,7 @@ func Test_embededToCsv(t *testing.T) {
 	b.Field3 = "F3"
 
 	// Start test
-	assert.Equal(t, "F1,F2,F3", ToCsv(b, ","))
+	assert.Equal(t, "F1,F2,F3", ToCsv(b, ",", "Y", "N"))
 }
 
 // func Test_setEmbeded(t *testing.T) {
