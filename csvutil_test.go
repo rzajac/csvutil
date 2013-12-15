@@ -1,7 +1,7 @@
 package csvutil
 
 import (
-	"github.com/rzajac/assert/assert"
+	"github.com/rzajac/goassert/assert"
 	"io"
 	"reflect"
 	"strings"
