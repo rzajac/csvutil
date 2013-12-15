@@ -128,4 +128,4 @@ csvLine := c.LastCsvLine()
 ## License
 
 Released under the MIT License.
-Assert (c) Rafal Zajac <rzajac@gmail.com>
+CSVUtil (c) Rafal Zajac <rzajac@gmail.com>
