@@ -36,10 +36,11 @@ type Reader struct {
 	customTBool  map[string]struct{} // Custom true values
 	customFBool  map[string]struct{} // Custom false values
 	trim         string              // Characters to trim
+	csvReader    io.ReadCloser
 }
 
 // NewCsvParser returns new Reader
-func NewCsvUtil(r io.Reader) *Reader {
+func NewCsvUtil(r io.ReadCloser) *Reader {
 	reader := &Reader{csvr: csv.NewReader(r)}
 	reader.customTBool = make(map[string]struct{})
 	reader.customFBool = make(map[string]struct{})
@@ -91,6 +92,13 @@ func (r *Reader) CustomBool(t []string, f []string) *Reader {
 func (r *Reader) Trim(t string) *Reader {
 	r.trim = t
 	return r
+}
+
+func (r *Reader) Close() error {
+	if r.csvReader != nil {
+		return r.csvReader.Close()
+	}
+	return nil
 }
 
 // boolTr translates custom true / false values to string that strconv.ParseBool() understands.

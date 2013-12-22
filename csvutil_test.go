@@ -33,8 +33,21 @@ type B struct {
 	Field3 string
 }
 
-func StringReader(s string) *strings.Reader {
-	return strings.NewReader(s)
+type StringReaderCloser struct {
+	sr *strings.Reader
+}
+
+func (s *StringReaderCloser) Read(p []byte) (n int, err error) {
+	return s.sr.Read(p)
+}
+
+func (s *StringReaderCloser) Close() error {
+	return nil
+}
+
+func StringReader(s string) *StringReaderCloser {
+	src := &StringReaderCloser{sr: strings.NewReader(s)}
+	return src
 }
 
 // Actual tests
