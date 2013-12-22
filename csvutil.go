@@ -21,13 +21,16 @@ import (
 // Structure fields cache.
 var fCache map[string][]*sField
 
+// CsvHeader describes CSV header where the key is header name and key is an index.
+type CsvHeader map[string]int
+
 // CSV headers cache.
-var hCache map[string]map[string]int
+var hCache map[string]CsvHeader
 
 // Provides primitives to read CSV file and set values on structures.
 type Reader struct {
 	csvr         *csv.Reader         // CSV reader
-	header       map[string]int      // The names of the CSV columns
+	header       CsvHeader           // The names of the CSV columns
 	csvLine      []string            // The CSV column values
 	customHeader bool                // True if custom CSV header was set
 	customTBool  map[string]struct{} // Custom true values
@@ -37,8 +40,7 @@ type Reader struct {
 
 // NewCsvParser returns new Reader
 func NewCsvUtil(r io.Reader) *Reader {
-	reader := &Reader{
-		csvr: csv.NewReader(r)}
+	reader := &Reader{csvr: csv.NewReader(r)}
 	reader.customTBool = make(map[string]struct{})
 	reader.customFBool = make(map[string]struct{})
 	return reader
@@ -110,7 +112,7 @@ func (r *Reader) read() ([]string, error) {
 }
 
 // Header sets header for CSV file.
-func (r *Reader) Header(h map[string]int) *Reader {
+func (r *Reader) Header(h CsvHeader) *Reader {
 	r.header = h
 	r.customHeader = true
 	return r
@@ -129,7 +131,7 @@ func (r *Reader) SetData(v interface{}) error {
 
 	// Initialize cache if its not there yet
 	if hCache == nil {
-		hCache = make(map[string]map[string]int)
+		hCache = make(map[string]CsvHeader)
 	}
 
 	structFields, structName := getFields(v)
@@ -253,8 +255,8 @@ func skip(tag reflect.StructTag) bool {
 }
 
 // getHeaders returns array of CSV column names in order they appear in the record.
-func getHeaders(fields []*sField) map[string]int {
-	header := make(map[string]int)
+func getHeaders(fields []*sField) CsvHeader {
+	header := make(CsvHeader)
 	for idx, field := range fields {
 		header[field.name] = idx
 	}

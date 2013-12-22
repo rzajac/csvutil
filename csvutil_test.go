@@ -62,7 +62,7 @@ func Test_Header(t *testing.T) {
 	c := NewCsvUtil(nil)
 
 	// Start test
-	exp := map[string]int{"Name": 0, "Age": 1, "Balance": 2, "LowBalance": 3}
+	exp := CsvHeader{"Name": 0, "Age": 1, "Balance": 2, "LowBalance": 3}
 	c.Header(exp)
 	assert.Equal(t, exp, c.header)
 }
@@ -134,7 +134,7 @@ func Test_getHeaders(t *testing.T) {
 
 	// Start test
 	headers := getHeaders(fields)
-	assert.Equal(t, map[string]int{"Name": 0, "Age": 1, "Balance": 2, "LowBalance": 3}, headers)
+	assert.Equal(t, CsvHeader{"Name": 0, "Age": 1, "Balance": 2, "LowBalance": 3}, headers)
 }
 
 func Test_SetData(t *testing.T) {
