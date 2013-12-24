@@ -28,33 +28,17 @@ type person2 struct {
 type A struct {
 	Field1, Field2 string
 }
+
 type B struct {
 	A
 	Field3 string
-}
-
-type StringReaderCloser struct {
-	sr *strings.Reader
-}
-
-func (s *StringReaderCloser) Read(p []byte) (n int, err error) {
-	return s.sr.Read(p)
-}
-
-func (s *StringReaderCloser) Close() error {
-	return nil
-}
-
-func StringReader(s string) *StringReaderCloser {
-	src := &StringReaderCloser{sr: strings.NewReader(s)}
-	return src
 }
 
 // Actual tests
 
 func Test_NewReader(t *testing.T) {
 	// Prepare test
-	sr := StringReader(strings.Join(testCsvLines, "\n"))
+	sr := NewStringReadCloser(strings.Join(testCsvLines, "\n"))
 	c := NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1)
 
 	// Start test
@@ -152,7 +136,7 @@ func Test_getHeaders(t *testing.T) {
 
 func Test_SetData(t *testing.T) {
 	// Prepare test
-	sr := StringReader(strings.Join(testCsvLines, "\n"))
+	sr := NewStringReadCloser(strings.Join(testCsvLines, "\n"))
 	c := NewCsvUtil(sr).Comma('|').
 		TrailingComma(true).
 		FieldsPerRecord(-1).
@@ -225,7 +209,7 @@ func Test_ToCsv(t *testing.T) {
 
 func Test_pickingColumns(t *testing.T) {
 	// Prepare test
-	sr := StringReader(strings.Join(testCsvLines, "\n"))
+	sr := NewStringReadCloser(strings.Join(testCsvLines, "\n"))
 	c := NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1)
 
 	c.Header(map[string]int{"Name": 0, "Balance": 2})
@@ -241,7 +225,7 @@ func Test_pickingColumns(t *testing.T) {
 
 func Test_customTrueFalse(t *testing.T) {
 	// Prepare test
-	sr := StringReader("YY|NN")
+	sr := NewStringReadCloser("YY|NN")
 	c := NewCsvUtil(sr).Comma('|').CustomBool([]string{"YY"}, []string{"NN"})
 
 	type YN struct {
@@ -260,7 +244,7 @@ func Test_customTrueFalse(t *testing.T) {
 
 func Test_trim(t *testing.T) {
 	// Prepare test
-	sr := StringReader("   Tom |12|123|T")
+	sr := NewStringReadCloser("   Tom |12|123|T")
 	c := NewCsvUtil(sr).Comma('|').Trim(" ")
 
 	// Start test
@@ -296,7 +280,7 @@ func Test_embededToCsv(t *testing.T) {
 // 	}
 // 	b := new(B)
 
-// 	sr := StringReader("F1,F2,F3")
+// 	sr := NewStringReadCloser("F1,F2,F3")
 // 	c := NewCsvUtil(sr)
 
 // 	// Start test

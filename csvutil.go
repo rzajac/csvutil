@@ -40,8 +40,8 @@ type Reader struct {
 }
 
 // NewCsvParser returns new Reader
-func NewCsvUtil(r io.ReadCloser) *Reader {
-	reader := &Reader{csvr: csv.NewReader(r)}
+func NewCsvUtil(rc io.ReadCloser) *Reader {
+	reader := &Reader{csvr: csv.NewReader(rc)}
 	reader.customTBool = make(map[string]struct{})
 	reader.customFBool = make(map[string]struct{})
 	return reader
@@ -376,4 +376,23 @@ func getValue(field reflect.Value, boolTrue, boolFalse string) string {
 	default:
 		panic("Wasn't able to get value for filed: " + field.Type().Name() + " field type:" + field.Type().String())
 	}
+}
+
+// StringReadCloser helps with testing in other packages.
+// This satisfies io.ReadCloser interface.
+type StringReadCloser struct {
+	strReader io.Reader
+}
+
+func (s *StringReadCloser) Read(p []byte) (n int, err error) {
+	return s.strReader.Read(p)
+}
+
+func (s *StringReadCloser) Close() error {
+	return nil
+}
+
+// NewStringReadCloser return new StringReadCloser instance.
+func NewStringReadCloser(s string) *StringReadCloser {
+	return &StringReadCloser{strReader: strings.NewReader(s)}
 }

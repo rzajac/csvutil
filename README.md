@@ -33,8 +33,8 @@ type person struct {
 }
 
 main () {
-	// This can be any Reader() interface
-	sr := StringReader(strings.Join(testCsvLines, "\n"))
+	// This can be any io.ReadCloser() interface
+	sr := csvutil.StringReadCloser(strings.Join(testCsvLines, "\n"))
 
 	// Set delimiter to '|', allow for trailing comma and do not check fields per CSV record
 	c := csvutil.NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1).CustomBool([]string{"Y"}, []string{"N"})
@@ -62,7 +62,7 @@ type person2 struct {
 }
 
 main () {
-	sr := StringReader(strings.Join(testCsvLines, "\n"))
+	sr := csvutil.StringReadCloser(strings.Join(testCsvLines, "\n"))
 
 	// Set delimiter to '|', allow for trailing comma and do not check fields per CSV record
 	c := csvutil.NewCsvUtil(sr).Comma('|').TrailingComma(true).FieldsPerRecord(-1)
@@ -91,7 +91,7 @@ main () {
 
 ```go
 main () {
-	sr := StringReader("Y|N")
+	sr := csvutil.StringReadCloser("Y|N")
 	c := csvutil.NewCsvUtil(sr).CustomBool([]string{"Y"}, []string{"N"})
 }
 ```
