@@ -249,7 +249,7 @@ func getFields(v interface{}) ([]*sField, string) {
 	var structField reflect.StructField
 	for i := 0; i < t.NumField(); i++ {
 		structField = t.Field(i)
-		if !skip(structField.Tag) && reflect.ValueOf(v).Elem().Field(i).CanSet() {
+		if !structField.Anonymous && !skip(structField.Tag) && reflect.ValueOf(v).Elem().Field(i).CanSet() {
 			f := &sField{name: structField.Name, typ: structField.Type}
 			structFields = append(structFields, f)
 		}
