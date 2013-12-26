@@ -131,6 +131,7 @@ func (r *Reader) Header(h CsvHeader) *Reader {
 func (r *Reader) SetData(v interface{}) error {
 	var err error
 	var ok bool
+	var strValue string
 
 	_, err = r.read()
 	if err != nil {
@@ -153,7 +154,7 @@ func (r *Reader) SetData(v interface{}) error {
 
 	value := reflect.ValueOf(v).Elem()
 	for _, sf := range structFields {
-		strValue := r.colByName(sf.name)
+		strValue = r.colByName(sf.name)
 		err = r.setValue(value, sf, strValue)
 		if err != nil {
 			return err
@@ -181,6 +182,9 @@ func (r *Reader) colByName(colName string) string {
 func ToCsv(v interface{}, delim, boolTrue, boolFalse string) string {
 	var csvLine []string
 	var strValue string
+	var structField reflect.StructField
+	var field reflect.Value
+
 	t := reflect.ValueOf(v)
 
 	if t.Kind() == reflect.Ptr {
@@ -192,8 +196,8 @@ func ToCsv(v interface{}, delim, boolTrue, boolFalse string) string {
 	}
 
 	for i := 0; i < t.NumField(); i++ {
-		structField := t.Type().Field(i)
-		field := t.Field(i)
+		structField = t.Type().Field(i)
+		field = t.Field(i)
 
 		if structField.Anonymous {
 			strValue = ToCsv(field.Interface(), delim, boolTrue, boolFalse)
@@ -242,12 +246,11 @@ func getFields(v interface{}) ([]*sField, string) {
 		return structFields, structName
 	}
 
+	var structField reflect.StructField
 	for i := 0; i < t.NumField(); i++ {
-		structField := t.Field(i)
+		structField = t.Field(i)
 		if !skip(structField.Tag) && reflect.ValueOf(v).Elem().Field(i).CanSet() {
-			f := &sField{}
-			f.name = structField.Name
-			f.typ = structField.Type
+			f := &sField{name: structField.Name, typ: structField.Type}
 			structFields = append(structFields, f)
 		}
 	}
