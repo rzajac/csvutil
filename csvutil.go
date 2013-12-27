@@ -21,7 +21,7 @@ import (
 // Structure fields cache.
 var fCache map[string][]*sField
 
-// CsvHeader describes CSV header where the key is header name and key is an index.
+// CsvHeader describes CSV header where the key is name and key is a column index from the right.
 type CsvHeader map[string]int
 
 // CSV headers cache.
@@ -39,7 +39,7 @@ type Reader struct {
 	csvReader    io.ReadCloser
 }
 
-// NewCsvParser returns new Reader
+// NewCsvUtil returns new Reader.
 func NewCsvUtil(rc io.ReadCloser) *Reader {
 	reader := &Reader{csvr: csv.NewReader(rc)}
 	reader.customTBool = make(map[string]struct{})
@@ -47,19 +47,19 @@ func NewCsvUtil(rc io.ReadCloser) *Reader {
 	return reader
 }
 
-// Comma sets field delimiter (set to ',' by default).
+// Comma sets field delimiter (default: ',').
 func (r *Reader) Comma(s rune) *Reader {
 	r.csvr.Comma = s
 	return r
 }
 
-// TrailingComma allow trailing comma (set to false by default).
+// TrailingComma allow trailing comma (default: false).
 func (r *Reader) TrailingComma(b bool) *Reader {
 	r.csvr.TrailingComma = b
 	return r
 }
 
-// Comment sets number of expected fields per record.
+// Comment character for start of line.
 func (r *Reader) Comment(c rune) *Reader {
 	r.csvr.Comment = c
 	return r
@@ -77,7 +77,13 @@ func (r *Reader) LazyQuotes(b bool) *Reader {
 	return r
 }
 
-// CustomBool set custom boolean values
+// CustomBool set custom boolean values.
+//
+// Example:
+//
+//		// Treat "Y" as true and "N" as false.
+// 		NewCsvUtil(sr).CustomBool([]string{"Y"}, []string{"N"})
+//
 func (r *Reader) CustomBool(t []string, f []string) *Reader {
 	for _, tv := range t {
 		r.customTBool[tv] = struct{}{}
@@ -94,6 +100,7 @@ func (r *Reader) Trim(t string) *Reader {
 	return r
 }
 
+// Close closes the io stream.
 func (r *Reader) Close() error {
 	if r.csvReader != nil {
 		return r.csvReader.Close()
@@ -119,7 +126,7 @@ func (r *Reader) read() ([]string, error) {
 	return r.csvLine, err
 }
 
-// Header sets header for CSV file.
+// Header sets CSV header.
 func (r *Reader) Header(h CsvHeader) *Reader {
 	r.header = h
 	r.customHeader = true
@@ -164,7 +171,7 @@ func (r *Reader) SetData(v interface{}) error {
 	return err
 }
 
-// LastCsvLine returns most recent CSV line that has been read from the file.
+// LastCsvLine returns most recent CSV line that has been read from the io.Reader.
 func (r *Reader) LastCsvLine() string {
 	return strings.Join(r.csvLine, string(r.csvr.Comma))
 }
@@ -178,7 +185,8 @@ func (r *Reader) colByName(colName string) string {
 	return value
 }
 
-// ToCsv takes a struct and returns CSV line.
+// ToCsv takes a struct and returns CSV line with data delimited by delim and
+// true, false values translated to boolTrue, boolFalse respectively.
 func ToCsv(v interface{}, delim, boolTrue, boolFalse string) string {
 	var csvLine []string
 	var strValue string
