@@ -21,11 +21,17 @@ import (
 // Structure fields cache.
 var fCache map[string][]*sField
 
-// CsvHeader describes CSV header where the key is name and key is a column index from the right.
+// CsvHeader describes CSV header where the key is name and value is the column index.
 type CsvHeader map[string]int
 
 // CSV headers cache.
 var hCache map[string]CsvHeader
+
+// sField described structure field.
+type sField struct {
+	name string
+	kind reflect.Kind
+}
 
 // Provides primitives to read CSV file and set values on structures.
 type Reader struct {
@@ -140,8 +146,7 @@ func (r *Reader) SetData(v interface{}) error {
 	var ok bool
 	var strValue string
 
-	_, err = r.read()
-	if err != nil {
+	if _, err = r.read(); err != nil {
 		return err
 	}
 
@@ -159,11 +164,14 @@ func (r *Reader) SetData(v interface{}) error {
 		}
 	}
 
-	value := reflect.ValueOf(v).Elem()
+	// Structure
+	s := reflect.ValueOf(v).Elem()
+
 	for _, sf := range structFields {
+		// Get CSV value (string)
 		strValue = r.colByName(sf.name)
-		err = r.setValue(value, sf, strValue)
-		if err != nil {
+		// Set value on structure
+		if err = r.setValue(s, sf, strValue); err != nil {
 			return err
 		}
 	}
@@ -185,13 +193,14 @@ func (r *Reader) colByName(colName string) string {
 	return value
 }
 
-// ToCsv takes a struct and returns CSV line with data delimited by delim and
+// ToCsv takes a structure and returns CSV line with data delimited by delim and
 // true, false values translated to boolTrue, boolFalse respectively.
 func ToCsv(v interface{}, delim, boolTrue, boolFalse string) string {
 	var csvLine []string
 	var strValue string
 	var structField reflect.StructField
 	var field reflect.Value
+	var skp bool
 
 	t := reflect.ValueOf(v)
 
@@ -206,26 +215,21 @@ func ToCsv(v interface{}, delim, boolTrue, boolFalse string) string {
 	for i := 0; i < t.NumField(); i++ {
 		structField = t.Type().Field(i)
 		field = t.Field(i)
+		skp = skip(structField.Tag)
 
-		if structField.Anonymous {
+		if structField.Anonymous && !skp {
 			strValue = ToCsv(field.Interface(), delim, boolTrue, boolFalse)
 			csvLine = append(csvLine, strValue)
 			continue
 		}
 
-		if !skip(structField.Tag) && field.CanInterface() {
+		if !skp && field.CanInterface() {
 			strValue = getValue(field, boolTrue, boolFalse)
 			csvLine = append(csvLine, strValue)
 		}
 	}
 
 	return strings.Join(csvLine, delim)
-}
-
-// sField described structure field.
-type sField struct {
-	name string
-	typ  reflect.Type
 }
 
 // getFields returns array of sField for the passed struct.
@@ -250,30 +254,61 @@ func getFields(v interface{}) ([]*sField, string) {
 	var ok bool
 	structName := t.String()
 
+	// If we have the structure in cache we return it right away
 	if structFields, ok = fCache[structName]; ok {
 		return structFields, structName
 	}
 
-	var structField reflect.StructField
-	for i := 0; i < t.NumField(); i++ {
-		structField = t.Field(i)
-		if !structField.Anonymous && !skip(structField.Tag) && reflect.ValueOf(v).Elem().Field(i).CanSet() {
-			f := &sField{name: structField.Name, typ: structField.Type}
-			structFields = append(structFields, f)
-		}
-	}
-
+	// Recursively get structure fields (support for embedded structures)
+	structFields = getFieldsRec(t, nil)
 	fCache[structName] = structFields
 
 	return structFields, structName
 }
 
-// skip returns true if struct field is tagged with skip.
+// getFieldsRec recursively get structure fields.
+// Support for embedded structures.
+func getFieldsRec(t reflect.Type, fHist map[string]int) []*sField {
+	var skp bool // Skip field or not
+	var fIdx int // Field index
+	var ok bool  // Did we encounter the field before or not
+
+	if fHist == nil {
+		// History of encountered fields
+		fHist = make(map[string]int)
+	}
+
+	structFields := []*sField{}
+	numberOfFields := t.NumField()
+
+	var structField reflect.StructField
+	for i := 0; i < numberOfFields; i++ {
+		structField = t.Field(i)
+		skp = skip(structField.Tag)
+
+		if fIdx, ok = fHist[structField.Name]; ok && skp {
+			structFields = append(structFields[:fIdx], structFields[fIdx+1:]...)
+		}
+
+		if !skp && reflect.New(t).Elem().Field(i).CanSet() {
+			if structField.Type.Kind() == reflect.Struct {
+				structFields = append(structFields, getFieldsRec(structField.Type, fHist)...)
+			} else {
+				fHist[structField.Name] = i
+				structFields = append(structFields, &sField{name: structField.Name, kind: structField.Type.Kind()})
+			}
+		}
+	}
+
+	return structFields
+}
+
+// skip returns true if structure field is tagged with skip.
 func skip(tag reflect.StructTag) bool {
 	return strings.HasPrefix(tag.Get("csv"), "-")
 }
 
-// getHeaders returns array of CSV column names in order they appear in the record.
+// getHeaders returns array of CSV column names in order they appear in the record / structure.
 func getHeaders(fields []*sField) CsvHeader {
 	header := make(CsvHeader)
 	for idx, field := range fields {
@@ -286,7 +321,7 @@ func getHeaders(fields []*sField) CsvHeader {
 func (r *Reader) setValue(v reflect.Value, f *sField, value string) (err error) {
 	elem := v.FieldByName(f.name)
 	if elem.CanSet() {
-		switch f.typ.Kind() {
+		switch f.kind {
 		case reflect.String:
 			elem.SetString(value)
 			return

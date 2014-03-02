@@ -74,16 +74,16 @@ func Test_getFields(t *testing.T) {
 	assert.Equal(t, "csvutil.person", structName)
 
 	assert.Equal(t, "Name", fields[0].name)
-	assert.Equal(t, reflect.String, fields[0].typ.Kind())
+	assert.Equal(t, reflect.String, fields[0].kind)
 
 	assert.Equal(t, "Age", fields[1].name)
-	assert.Equal(t, reflect.Int, fields[1].typ.Kind())
+	assert.Equal(t, reflect.Int, fields[1].kind)
 
 	assert.Equal(t, "Balance", fields[2].name)
-	assert.Equal(t, reflect.Float32, fields[2].typ.Kind())
+	assert.Equal(t, reflect.Float32, fields[2].kind)
 
 	assert.Equal(t, "LowBalance", fields[3].name)
-	assert.Equal(t, reflect.Bool, fields[3].typ.Kind())
+	assert.Equal(t, reflect.Bool, fields[3].kind)
 }
 
 func Test_getFields_panic(t *testing.T) {
