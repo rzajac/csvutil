@@ -155,7 +155,9 @@ func (r *Reader) SetData(v interface{}) error {
 		hCache = make(map[string]CsvHeader)
 	}
 
-	structFields, structName := getFields(v)
+	vo := reflect.ValueOf(v)
+
+	structFields, structName := getFields(vo)
 
 	if !r.customHeader {
 		if r.header, ok = hCache[structName]; !ok {
@@ -165,7 +167,7 @@ func (r *Reader) SetData(v interface{}) error {
 	}
 
 	// Structure
-	s := reflect.ValueOf(v).Elem()
+	s := vo.Elem()
 
 	for _, sf := range structFields {
 		// Get CSV value (string)
@@ -233,10 +235,10 @@ func ToCsv(v interface{}, delim, boolTrue, boolFalse string) string {
 }
 
 // getFields returns array of sField for the passed struct.
-func getFields(v interface{}) ([]*sField, string) {
+func getFields(v reflect.Value) ([]*sField, string) {
 	structFields := []*sField{}
 
-	t := reflect.TypeOf(v)
+	t := v.Type()
 
 	if t.Kind() != reflect.Ptr {
 		panic("Expected pointer")
