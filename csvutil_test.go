@@ -1,9 +1,11 @@
 package csvutil
 
 import (
+	"fmt"
 	"github.com/rzajac/goassert/assert"
 	"io"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 )
@@ -32,6 +34,25 @@ type A struct {
 type B struct {
 	A
 	Field3 string
+}
+
+type personItf struct {
+	Name       string
+	Age        int
+	Balance    float32
+	Skipped    string `csv:"-"`
+	LowBalance bool
+}
+
+func (p *personItf) MarshalCSV() ([]byte, error) {
+	var b string
+	if p.LowBalance {
+		b = "T"
+	} else {
+		b = "N"
+	}
+
+	return []byte(p.Name + "," + strconv.FormatInt(int64(p.Age), 10) + "," + strconv.FormatFloat(float64(p.Balance), 'f', 2, 64) + "," + b), nil
 }
 
 // Actual tests
@@ -69,7 +90,7 @@ func Test_getFields(t *testing.T) {
 	p := &person{}
 
 	// Start test
-	fields, structName := getFields(p)
+	fields, structName := getFields(reflect.ValueOf(p))
 	assert.Equal(t, 4, len(fields))
 	assert.Equal(t, "csvutil.person", structName)
 
@@ -89,35 +110,35 @@ func Test_getFields(t *testing.T) {
 func Test_getFields_panic(t *testing.T) {
 	fn := func() {
 		p := make(map[int]string)
-		getFields(p)
+		getFields(reflect.ValueOf(p))
 	}
 
 	assert.Panic(t, fn, "Expected pointer")
 
 	fn = func() {
 		p := 1
-		getFields(p)
+		getFields(reflect.ValueOf(p))
 	}
 
 	assert.Panic(t, fn, "Expected pointer")
 
 	fn = func() {
 		p := []string{"aaa"}
-		getFields(p)
+		getFields(reflect.ValueOf(p))
 	}
 
 	assert.Panic(t, fn, "Expected pointer")
 
 	fn = func() {
 		p := []string{"aaa"}
-		getFields(&p)
+		getFields(reflect.ValueOf(&p))
 	}
 
 	assert.Panic(t, fn, "Expected pointer to")
 
 	fn = func() {
 		p := new(person)
-		getFields(&p)
+		getFields(reflect.ValueOf(&p))
 	}
 
 	assert.Panic(t, fn, "Expected pointer to")
@@ -126,7 +147,7 @@ func Test_getFields_panic(t *testing.T) {
 func Test_getHeaders(t *testing.T) {
 	// Prepare test
 	p := &person{}
-	fields, structName := getFields(p)
+	fields, structName := getFields(reflect.ValueOf(p))
 	assert.Equal(t, "csvutil.person", structName)
 
 	// Start test
@@ -201,10 +222,16 @@ func Test_FieldsPerRecord(t *testing.T) {
 func Test_ToCsv(t *testing.T) {
 	// Prepare test
 	p := &person{"Tom", 45, 111.22, "aaa", true}
+	p2 := &personItf{"TomItf", 55, 222.11, "bbb", false}
 
 	// Start test
-	gotCsv := ToCsv(p, "|", "YY", "NN")
+	gotCsv, err := ToCsv(p, "|", "YY", "NN")
+	assert.NotError(t, err)
 	assert.Equal(t, "Tom|45|111.22|YY", gotCsv)
+
+	gotCsv, err = Csv(p2)
+	assert.NotError(t, err)
+	assert.Equal(t, "TomItf,55,222.11,N", gotCsv)
 }
 
 func Test_pickingColumns(t *testing.T) {
@@ -266,26 +293,28 @@ func Test_embededToCsv(t *testing.T) {
 	b.Field3 = "F3"
 
 	// Start test
-	assert.Equal(t, "F1,F2,F3", ToCsv(b, ",", "Y", "N"))
+	s, err := ToCsv(b, ",", "Y", "N")
+	assert.NotError(t, err)
+	assert.Equal(t, "F1,F2,F3", s)
 }
 
-// func Test_setEmbeded(t *testing.T) {
-// 	// Prepare test
-// 	type A struct {
-// 		Field1, Field2 string
-// 	}
-// 	type B struct {
-// 		A
-// 		Field3 string
-// 	}
-// 	b := new(B)
+func Test_setEmbeded(t *testing.T) {
+	// Prepare test
+	type A struct {
+		Field1, Field2 string
+	}
+	type B struct {
+		A
+		Field3 string
+	}
+	b := new(B)
 
-// 	sr := NewStringReadCloser("F1,F2,F3")
-// 	c := NewCsvUtil(sr)
+	sr := NewStringReadCloser("F1,F2,F3")
+	c := NewCsvUtil(sr)
 
-// 	// Start test
-// 	c.SetData(b)
+	// Start test
+	c.SetData(b)
 
-// 	fmt.Println(b)
-// 	t.Fail()
-// }
+	fmt.Println(b)
+	t.Fail()
+}

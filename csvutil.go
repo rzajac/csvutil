@@ -16,6 +16,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 )
 
 // Structure fields cache.
@@ -42,6 +43,7 @@ type Reader struct {
 	customTBool  map[string]struct{} // Custom true values
 	customFBool  map[string]struct{} // Custom false values
 	trim         string              // Characters to trim
+	timeLayout   string
 	csvReader    io.ReadCloser
 }
 
@@ -50,6 +52,7 @@ func NewCsvUtil(rc io.ReadCloser) *Reader {
 	reader := &Reader{csvr: csv.NewReader(rc)}
 	reader.customTBool = make(map[string]struct{})
 	reader.customFBool = make(map[string]struct{})
+	reader.timeLayout = time.RFC3339
 	return reader
 }
 
@@ -80,6 +83,11 @@ func (r *Reader) FieldsPerRecord(i int) *Reader {
 // LazyQuotes allow lazy quotes.
 func (r *Reader) LazyQuotes(b bool) *Reader {
 	r.csvr.LazyQuotes = b
+	return r
+}
+
+func (r *Reader) TimeLayout(timeLayout string) *Reader {
+	r.timeLayout = timeLayout
 	return r
 }
 
@@ -197,12 +205,18 @@ func (r *Reader) colByName(colName string) string {
 
 // ToCsv takes a structure and returns CSV line with data delimited by delim and
 // true, false values translated to boolTrue, boolFalse respectively.
-func ToCsv(v interface{}, delim, boolTrue, boolFalse string) string {
+func ToCsv(v interface{}, delim, boolTrue, boolFalse string) (string, error) {
+	var err error
 	var csvLine []string
 	var strValue string
 	var structField reflect.StructField
 	var field reflect.Value
 	var skp bool
+
+	if tt, ok := v.(Marshaler); ok {
+		b, err := tt.MarshalCSV()
+		return string(b), err
+	}
 
 	t := reflect.ValueOf(v)
 
@@ -220,7 +234,9 @@ func ToCsv(v interface{}, delim, boolTrue, boolFalse string) string {
 		skp = skip(structField.Tag)
 
 		if structField.Anonymous && !skp {
-			strValue = ToCsv(field.Interface(), delim, boolTrue, boolFalse)
+			if strValue, err = ToCsv(field.Interface(), delim, boolTrue, boolFalse); err != nil {
+				return strValue, err
+			}
 			csvLine = append(csvLine, strValue)
 			continue
 		}
@@ -231,7 +247,11 @@ func ToCsv(v interface{}, delim, boolTrue, boolFalse string) string {
 		}
 	}
 
-	return strings.Join(csvLine, delim)
+	return strings.Join(csvLine, delim), nil
+}
+
+func Csv(v interface{}) (string, error) {
+	return ToCsv(v, ",", "T", "F")
 }
 
 // getFields returns array of sField for the passed struct.
@@ -323,6 +343,11 @@ func getHeaders(fields []*sField) CsvHeader {
 func (r *Reader) setValue(v reflect.Value, f *sField, value string) (err error) {
 	elem := v.FieldByName(f.name)
 	if elem.CanSet() {
+
+		if vv, ok := v.Interface().(Unmarshaler); ok {
+			return vv.UnmarshalCSV([]byte(value))
+		}
+
 		switch f.kind {
 		case reflect.String:
 			elem.SetString(value)
